@@ -41,15 +41,9 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
     let!(:stacks) { {reference: another_thread.backtrace_locations, gathered: sample_and_decode(another_thread)} }
 
     it 'matches the Ruby backtrace API' do
-      pending 'Needs fixes in rb_profile_frames to fix sleep'
+      pending 'Missing more backported rb_profile_frames functionality' if RUBY_VERSION < '3'
 
       expect(gathered_stack).to eq reference_stack
-    end
-
-    it 'matches the Ruby backtrace API excluding the sleep frame' do
-      # FIXME: Temporary, until above test can be fixed
-
-      expect(gathered_stack[1..-1]).to eq reference_stack[1..-1]
     end
   end
 
