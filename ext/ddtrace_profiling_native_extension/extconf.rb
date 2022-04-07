@@ -80,6 +80,11 @@ if RUBY_VERSION < '3'
   $defs << '-DUSE_BACKPORTED_RB_PROFILE_FRAME_METHOD_NAME'
 end
 
+# On older Rubies, we need to use rb_thread_t instead of rb_execution_context_t
+if RUBY_VERSION < '2.5'
+  $defs << '-DUSE_THREAD_INSTEAD_OF_EXECUTION_CONTEXT'
+end
+
 # If we got here, libddprof is available and loaded
 ENV['PKG_CONFIG_PATH'] = "#{ENV['PKG_CONFIG_PATH']}:#{Libddprof.pkgconfig_folder}"
 unless pkg_config('ddprof_ffi_with_rpath')

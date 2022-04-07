@@ -138,6 +138,8 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 // * Add thread argument
 // * Add is_ruby_frame argument
 // * Removed `if (lines)` tests -- require/assume that like `buff`, `lines` is always specified
+// * Support Ruby < 2.5 by using rb_thread_t instead of rb_execution_context_t (which did not exist and was just
+//   part of rb_thread_t)
 //
 // What is rb_profile_frames?
 // `rb_profile_frames` is a Ruby VM debug API added for use by profilers for sampling the stack trace of a Ruby thread.
@@ -165,7 +167,11 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 int ddtrace_rb_profile_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines, bool* is_ruby_frame)
 {
     int i;
+#ifndef USE_THREAD_INSTEAD_OF_EXECUTION_CONTEXT // Modern Rubies
     const rb_execution_context_t *ec = thread_struct_from_object(thread)->ec;
+#else // Ruby < 2.5
+    const rb_thread_t *ec = thread_struct_from_object(thread);
+#endif
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_callable_method_entry_t *cme;
 
