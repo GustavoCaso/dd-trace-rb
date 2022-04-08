@@ -89,6 +89,11 @@ if RUBY_VERSION < '2.5'
   $defs << '-DUSE_THREAD_INSTEAD_OF_EXECUTION_CONTEXT'
 end
 
+# On older Rubies, we need to use RUBY_VM_NORMAL_ISEQ_P instead of VM_FRAME_RUBYFRAME_P
+if RUBY_VERSION < '2.4'
+  $defs << '-DUSE_ISEQ_P_INSTEAD_OF_RUBYFRAME_P'
+end
+
 # If we got here, libddprof is available and loaded
 ENV['PKG_CONFIG_PATH'] = "#{ENV['PKG_CONFIG_PATH']}:#{Libddprof.pkgconfig_folder}"
 unless pkg_config('ddprof_ffi_with_rpath')
