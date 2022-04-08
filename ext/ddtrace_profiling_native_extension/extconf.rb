@@ -97,9 +97,12 @@ if RUBY_VERSION < '2.4'
   $defs << '-DUSE_LEGACY_RB_VM_FRAME_METHOD_ENTRY'
 end
 
-# For REALLY OLD Rubies (before 2.3), the VM changed enough that we need an alternative legacy rb_profile_frames
+# For REALLY OLD Rubies...
 if RUBY_VERSION < '2.3'
+  # ...the VM changed enough that we need an alternative legacy rb_profile_frames
   $defs << '-DUSE_LEGACY_RB_PROFILE_FRAMES'
+  # ...there was no rb_time_timespec_new function
+  $defs << '-DNO_RB_TIME_TIMESPEC_NEW'
 end
 
 # If we got here, libddprof is available and loaded
