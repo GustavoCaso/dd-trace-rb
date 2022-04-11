@@ -19,6 +19,9 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
   let(:reference_stack) { raw_reference_stack.map { |location| {base_label: location.base_label, path: location.path, lineno: location.lineno} } }
   let(:gathered_stack) { stacks.fetch(:gathered) }
 
+  # Kernel#sleep is one of many Ruby standard library APIs that are implemented using native code. Older versions of
+  # rb_profile_frames did not include these frames in their output, so this spec tests that our rb_profile_frames fixes
+  # do correctly overcome this.
   context 'when sampling a sleeping thread' do
     let(:ready_queue) { Queue.new }
     let(:another_thread) do
@@ -42,6 +45,10 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
 
     it 'matches the Ruby backtrace API' do
       expect(gathered_stack).to eq reference_stack
+    end
+
+    it 'has a sleeping frame at the top of the stack' do
+      expect(gathered_stack.first).to match(hash_including(base_label: 'sleep'))
     end
   end
 
