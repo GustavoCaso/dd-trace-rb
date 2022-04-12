@@ -3,20 +3,28 @@
 require 'datadog/profiling/spec_helper'
 require 'datadog/profiling/collectors/stack'
 
+# This file has a few lines that cannot be broken because we want some things to have the same line number when looking
+# at their stack traces. Hence, we disable Rubocop's complaints here.
+#
+# rubocop:disable Layout/LineLength
 RSpec.describe Datadog::Profiling::Collectors::Stack do
   before { skip_if_profiling_not_supported(self) }
 
   subject(:collectors_stack) { described_class.new }
 
   let(:recorder) { Datadog::Profiling::StackRecorder.new }
-  let(:metric_values) { {'cpu-time' => 123, 'cpu-samples' => 456, 'wall-time' => 789} }
-  let(:labels) { {'label_a' => 'value_a', 'label_b' => 'value_b'}.to_a }
+  let(:metric_values) { { 'cpu-time' => 123, 'cpu-samples' => 456, 'wall-time' => 789 } }
+  let(:labels) { { 'label_a' => 'value_a', 'label_b' => 'value_b' }.to_a }
 
   let(:pprof_data) { recorder.serialize.last }
   let(:decoded_profile) { ::Perftools::Profiles::Profile.decode(pprof_data) }
 
   let(:raw_reference_stack) { stacks.fetch(:reference) }
-  let(:reference_stack) { raw_reference_stack.map { |location| {base_label: location.base_label, path: location.path, lineno: location.lineno} } }
+  let(:reference_stack) do
+    raw_reference_stack.map do |location|
+      { base_label: location.base_label, path: location.path, lineno: location.lineno }
+    end
+  end
   let(:gathered_stack) { stacks.fetch(:gathered) }
 
   # Kernel#sleep is one of many Ruby standard library APIs that are implemented using native code. Older versions of
@@ -24,6 +32,7 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
   # do correctly overcome this.
   context 'when sampling a sleeping thread' do
     let(:ready_queue) { Queue.new }
+    let(:stacks) { { reference: sleeping_thread.backtrace_locations, gathered: sample_and_decode(sleeping_thread) } }
     let(:sleeping_thread) do
       Thread.new(ready_queue) do |ready_queue|
         ready_queue << true
@@ -41,8 +50,6 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
       sleeping_thread.join
     end
 
-    let!(:stacks) { {reference: sleeping_thread.backtrace_locations, gathered: sample_and_decode(sleeping_thread)} }
-
     it 'matches the Ruby backtrace API' do
       expect(gathered_stack).to eq reference_stack
     end
@@ -56,7 +63,7 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
   # main thread than the reference Ruby API. This is almost-surely a bug in rb_profile_frames, since the same frame
   # gets excluded from the reference Ruby API.
   context 'when sampling the main thread' do
-    let!(:stacks) { {reference: Thread.current.backtrace_locations, gathered: sample_and_decode(Thread.current)} }
+    let(:stacks) { { reference: Thread.current.backtrace_locations, gathered: sample_and_decode(Thread.current) } }
 
     let(:reference_stack) do
       # To make the stacks comparable we slice off the actual Ruby `Thread#backtrace_locations` frame since that part
@@ -92,7 +99,7 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
     let(:target_stack_depth) { 100 }
     let(:thread_with_deep_stack) { thread_with_stack_depth(target_stack_depth) }
 
-    let!(:stacks) { {reference: thread_with_deep_stack.backtrace_locations, gathered: sample_and_decode(thread_with_deep_stack, max_frames: max_frames)} }
+    let(:stacks) { { reference: thread_with_deep_stack.backtrace_locations, gathered: sample_and_decode(thread_with_deep_stack, max_frames: max_frames) } }
 
     after do
       thread_with_deep_stack.kill
@@ -113,7 +120,8 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
       placeholder = 1
       omitted_frames = target_stack_depth - max_frames - placeholder
 
-      expect(gathered_stack.last).to match(hash_including({base_label: '', path: "#{omitted_frames} frames omitted", lineno: 0}))
+      expect(gathered_stack.last)
+        .to match(hash_including({ base_label: '', path: "#{omitted_frames} frames omitted", lineno: 0 }))
     end
 
     def thread_with_stack_depth(depth)
@@ -137,9 +145,9 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
   end
 
   context 'when sampling a dead thread' do
-    let(:dead_thread) { Thread.new { }.tap(&:join) }
+    let(:dead_thread) { Thread.new {}.tap(&:join) }
 
-    let!(:stacks) { {reference: dead_thread.backtrace_locations, gathered: sample_and_decode(dead_thread)} }
+    let(:stacks) { { reference: dead_thread.backtrace_locations, gathered: sample_and_decode(dead_thread) } }
 
     it 'gathers an empty stack' do
       expect(gathered_stack).to be_empty
@@ -148,6 +156,7 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
 
   context 'when sampling a thread with empty locations' do
     let(:ready_pipe) { IO.pipe }
+    let(:stacks) { { reference: thread_with_empty_locations.backtrace_locations, gathered: sample_and_decode(thread_with_empty_locations) } }
     let(:finish_pipe) { IO.pipe }
 
     let(:thread_with_empty_locations) do
@@ -188,10 +197,8 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
       thread_with_empty_locations.join
     end
 
-    let!(:stacks) { {reference: thread_with_empty_locations.backtrace_locations, gathered: sample_and_decode(thread_with_empty_locations)} }
-
     it 'gathers a one-element stack with a "In native code" placeholder' do
-      expect(gathered_stack).to contain_exactly({base_label: '', path: 'In native code', lineno: 0})
+      expect(gathered_stack).to contain_exactly({ base_label: '', path: 'In native code', lineno: 0 })
     end
   end
 
@@ -212,11 +219,12 @@ RSpec.describe Datadog::Profiling::Collectors::Stack do
 
   def decode_frame(decoded_profile, location_id)
     strings = decoded_profile.string_table
-    location = decoded_profile.location.find { |location| location.id == location_id }
+    location = decoded_profile.location.find { |loc| loc.id == location_id }
     expect(location.line.size).to be 1
     line_entry = location.line.first
-    function = decoded_profile.function.find { |function| function.id == line_entry.function_id }
+    function = decoded_profile.function.find { |func| func.id == line_entry.function_id }
 
-    {base_label: strings[function.name], path: strings[function.filename], lineno: line_entry.line}
+    { base_label: strings[function.name], path: strings[function.filename], lineno: line_entry.line }
   end
 end
+# rubocop:enable Layout/LineLength
