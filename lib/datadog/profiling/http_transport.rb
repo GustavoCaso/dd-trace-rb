@@ -123,9 +123,11 @@ module Datadog
 
       # Used to log soft failures in `ddprof_ffi_Vec_tag_push` (e.g. we still report the profile in these cases)
       # Called from native code
+      # rubocop:disable Lint/IneffectiveAccessModifier
       def self.log_failure_to_process_tag(failure_details)
         Datadog.logger.warn("Failed to add tag to profiling request: #{failure_details}")
       end
+      # rubocop:enable Lint/IneffectiveAccessModifier
     end
   end
 end
