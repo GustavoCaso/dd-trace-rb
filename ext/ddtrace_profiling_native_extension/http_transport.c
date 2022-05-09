@@ -1,6 +1,5 @@
 #include <ruby.h>
 #include <ruby/thread.h>
-#include <ddprof/ffi.h>
 #include "libddprof_helpers.h"
 
 // Used to report profiling data to Datadog.
@@ -323,8 +322,8 @@ static VALUE _native_do_export(
   return perform_export(exporter_result, start, finish, slice_files, null_additional_tags, timeout_milliseconds);
 }
 
-static void *call_exporter_without_gvl(void *exporter_and_request) {
-  struct call_exporter_without_gvl_arguments *args = (struct call_exporter_without_gvl_arguments*) exporter_and_request;
+static void *call_exporter_without_gvl(void *call_args) {
+  struct call_exporter_without_gvl_arguments *args = (struct call_exporter_without_gvl_arguments *) call_args;
 
   args->result = ddprof_ffi_ProfileExporterV3_send(args->exporter, args->request, args->cancel_token);
   args->send_ran = true;
