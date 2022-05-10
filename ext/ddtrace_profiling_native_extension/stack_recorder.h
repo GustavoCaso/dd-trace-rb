@@ -9,7 +9,15 @@
 #define   ALLOC_SPACE_VALUE {.type_ = DDPROF_FFI_CHARSLICE_C("alloc-space"),   .unit = DDPROF_FFI_CHARSLICE_C("bytes")}
 #define    HEAP_SPACE_VALUE {.type_ = DDPROF_FFI_CHARSLICE_C("heap-space"),    .unit = DDPROF_FFI_CHARSLICE_C("bytes")}
 
-const static ddprof_ffi_ValueType enabled_value_types[] = {CPU_TIME_VALUE, CPU_SAMPLES_VALUE, WALL_TIME_VALUE};
+const static ddprof_ffi_ValueType enabled_value_types[] = {
+  #define CPU_TIME_VALUE_POS 0
+  CPU_TIME_VALUE,
+  #define CPU_SAMPLES_VALUE_POS 1
+  CPU_SAMPLES_VALUE,
+  #define WALL_TIME_VALUE_POS 2
+  WALL_TIME_VALUE
+};
+
 #define ENABLED_VALUE_TYPES_COUNT (sizeof(enabled_value_types) / sizeof(ddprof_ffi_ValueType))
 
 void record_sample(VALUE recorder_instance, ddprof_ffi_Sample sample);
