@@ -10,7 +10,7 @@ RSpec.describe Datadog::Profiling::TagBuilder do
       expect(call).to include(
         'host' => Datadog::Core::Environment::Socket.hostname,
         'language' => 'ruby',
-        'pid' => Process.pid.to_s,
+        'process_id' => Process.pid.to_s,
         'profiler_version' => start_with('1.'),
         'runtime' => 'ruby',
         'runtime_engine' => RUBY_ENGINE,
