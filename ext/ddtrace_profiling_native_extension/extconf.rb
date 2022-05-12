@@ -101,6 +101,9 @@ if RUBY_VERSION < '2.3'
   $defs << '-DNO_RB_TIME_TIMESPEC_NEW'
 end
 
+# In Ruby 2.1, living_threads were stored in a hashmap (st)
+$defs << '-DUSE_LEGACY_LIVING_THREADS_ST' if RUBY_VERSION < '2.2'
+
 # If we got here, libddprof is available and loaded
 ENV['PKG_CONFIG_PATH'] = "#{ENV['PKG_CONFIG_PATH']}:#{Libddprof.pkgconfig_folder}"
 unless pkg_config('ddprof_ffi_with_rpath')
